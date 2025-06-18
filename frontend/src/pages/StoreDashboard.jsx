@@ -46,7 +46,7 @@ const StoreDashboard = () => {
         const ratingsArray = response.data; // response.data is an array of ratings
 
 // const totalRatings = ratingsArray.length;
-        setRatingsData(ratingsArray[0]);
+      
         console.log(ratingsArray[0].store)
 //         const data = await response.data.store;
         // setRatingsData(ratingsArray[0]);
