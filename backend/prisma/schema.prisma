@@ -1,0 +1,53 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int      @id @default(autoincrement())
+  name     String   @db.VarChar(60)
+  email    String   @unique
+  password String
+  address  String?  @db.VarChar(400)
+  role     Role
+  ratings  Rating[]
+  stores   Store[]  @relation("StoreOwner")
+}
+
+model Store {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique  
+  address   String
+  ownerId   Int
+  owner     User     @relation("StoreOwner", fields: [ownerId], references: [id])
+  ratings   Rating[]
+}
+
+model Rating {
+  id       Int   @id @default(autoincrement())
+  rating   Int
+  user     User  @relation(fields: [userId], references: [id])
+  userId   Int
+  store    Store @relation(fields: [storeId], references: [id])
+  storeId  Int
+
+  @@unique([userId, storeId]) // one user can rate a store only once
+}
+
+enum Role {
+  ADMIN
+  USER
+  OWNER
+}
