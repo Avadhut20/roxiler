@@ -33,6 +33,8 @@ model Store {
   ownerId   Int
   owner     User     @relation("StoreOwner", fields: [ownerId], references: [id])
   ratings   Rating[]
+  overallRating  Float     @default(0)
+  totalRatings   Int       @default(0)
 }
 
 model Rating {

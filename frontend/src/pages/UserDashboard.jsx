@@ -11,6 +11,7 @@ const UserDashboard = () => {
 
 
   const [stores, setStores] = useState([]);
+  const[avg,setAvg]=useState(0);
   useEffect(() => {
   const fetchStores = async () => {
     try {
@@ -22,11 +23,13 @@ const UserDashboard = () => {
       });
       const data = await response.data;
       setStores(data);
+      setAvg(data.reduce((acc, store) => acc + (store.averageRating || 0), 0) / data.length || 0);
       console.log('Stores fetched:', data);
     } catch (error) {
       console.error('Error:', error);
     }
   };
+  console.log("rating "+ stores)
 
   fetchStores();
 }, []);
@@ -98,38 +101,38 @@ const UserDashboard = () => {
 
 
  const handleRatingSubmit = async (storeId, rating) => {
-  const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token');
 
-  try {
-    const response = await axios.post(
-      'http://localhost:8000/api/ratings',
-      { storeId, rating },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    console.log('Rating submitted:', response.data);
-    const { averageRating, totalRatings, userRating } = response.data.data;
+    try {
+      const res = await axios.post(
+        'http://localhost:8000/api/ratings',
+        { storeId, rating },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-    // 🔁 Update local store list with latest values from backend
-    setStores(prevStores =>
-      prevStores.map(store =>
-        store.id === storeId
-          ? {
+      const { averageRating, totalRatings } = res.data.data;
+      console.log(`Rating submitted for store ${storeId}:`, { rating, averageRating, totalRatings });
+
+      setStores(prevStores =>
+        prevStores.map(store => {
+          if (store.id === storeId) {
+            return {
               ...store,
-              overallRating: parseFloat(averageRating),
+              userRating: rating,
+              overallRating: averageRating,
               totalRatings,
-              userRating,
-            }
-          : store
-      )
-    );
+            };
+          }
+          return store;
+        })
+      );
 
-    setEditingRating(null);
-    setTempRating(0);
-  } catch (error) {
-    alert(error.response?.data?.message || 'Failed to submit rating');
-    console.error(error);
-  }
-};
+      setEditingRating(null);
+      setTempRating(0);
+    } catch (error) {
+      alert(error.response?.data?.message || 'Failed to submit rating');
+    }
+  };
 
 
   const handleLogout = () => {
@@ -243,9 +246,9 @@ const UserDashboard = () => {
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700">Overall Rating</span>
                     <div className="flex items-center space-x-2">
-                      <StarRating rating={Math.round(store.overallRating)} />
+                      <StarRating rating={Math.round(avg)} />
                       <span className="text-sm text-gray-600">
-                        {store.overallRating} ({store.totalRatings})
+                        {store.overallRating} ({stores.length})
                       </span>
                     </div>
                   </div>

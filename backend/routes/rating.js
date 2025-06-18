@@ -7,46 +7,54 @@ const router = express.Router();
 
 // POST /api/ratings
 // Body: { storeId: number, rating: number }
-router.get('/', verifyToken, async (req, res) => {
+router.post('/', verifyToken, async (req, res) => {
+  const { storeId, rating } = req.body;
   const userId = req.user.id;
-  const { name, address } = req.query;
 
-  const filters = {};
-  if (name) filters.name = { contains: name, mode: 'insensitive' };
-  if (address) filters.address = { contains: address, mode: 'insensitive' };
+  if (!storeId || rating < 1 || rating > 5) {
+    return res.status(400).json({ message: 'Invalid storeId or rating (1-5)' });
+  }
 
   try {
-    const stores = await prisma.store.findMany({
-      where: filters,
-      include: {
-        ratings: true,
+    const existingRating = await prisma.rating.findUnique({
+      where: { userId_storeId: { userId, storeId } },
+    });
+
+    if (existingRating) {
+      await prisma.rating.update({
+        where: { userId_storeId: { userId, storeId } },
+        data: { rating },
+      });
+    } else {
+      await prisma.rating.create({
+        data: { userId, storeId, rating },
+      });
+    }
+
+    const ratings = await prisma.rating.findMany({
+      where: { storeId },
+      select: { rating: true },
+    });
+
+    const totalRatings = ratings.length;
+    const totalPoints = ratings.reduce((sum, r) => sum + r.rating, 0);
+    const averageRating = parseFloat((totalPoints / totalRatings).toFixed(2));
+
+    await prisma.store.update({
+      where: { id: storeId },
+      data: { overallRating: averageRating, totalRatings: totalRatings },
+    });
+
+    res.status(200).json({
+      message: 'Rating saved',
+      data: {
+        averageRating,
+        totalRatings,
+        userRating: rating,
+        storeId,
       },
     });
-
-    const result = stores.map((store) => {
-      const userRating = store.ratings.find((r) => r.userId === userId)?.rating ?? null;
-
-      const totalRatings = store.ratings.length;
-      const averageRating =
-        totalRatings > 0
-          ? (
-              store.ratings.reduce((sum, r) => sum + r.rating, 0) / totalRatings
-            ).toFixed(2)
-          : null;
-
-      return {
-        id: store.id,
-        name: store.name,
-        address: store.address,
-        userRating,
-        totalRatings,
-        overallRating: averageRating,
-      };
-    });
-
-    res.json(result);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ error: error.message });
   }
 });

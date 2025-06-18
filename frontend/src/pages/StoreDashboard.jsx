@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import { 
   Star, 
   Users, 
@@ -14,9 +15,11 @@ import {
   Award,
   UserCheck
 } from 'lucide-react';
+// import { set } from '../../../backend';
 
 const StoreDashboard = () => {
   const [ratingsData, setRatingsData] = useState([]);
+  const [len,setLen]=useState(0);
   const [averageRating, setAverageRating] = useState(null);
   const [loading, setLoading] = useState(true);
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
@@ -31,21 +34,25 @@ const StoreDashboard = () => {
   useEffect(() => {
     const fetchRatings = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/stores/mine/ratings', {
-          method: 'GET',
+        console.log(`Fetching ratings for token: ${token}`);
+        const response = await axios.get('http://localhost:8000/api/stores/ratings', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
+        console.log('Ratings response:', response);
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch ratings');
-        }
+        const ratingsArray = response.data; // response.data is an array of ratings
 
-        const data = await response.json();
-        setRatingsData(data.ratings || []);
-        setAverageRating(data.averageRating);
+// const totalRatings = ratingsArray.length;
+        setRatingsData(ratingsArray[0]);
+        console.log(ratingsArray[0].store)
+//         const data = await response.data.store;
+        // setRatingsData(ratingsArray[0]);
+        setLen(ratingsArray.length);
+        setAverageRating(ratingsArray[0].store.overallRating || 0);
+     
       } catch (error) {
         console.error('Failed to load ratings', error);
       } finally {
@@ -201,7 +208,7 @@ const StoreDashboard = () => {
               <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
             ) : (
               <span className="text-3xl font-bold text-gray-900">
-                {ratingsData.length}
+                {len}
               </span>
             )}
           </div>
@@ -221,7 +228,7 @@ const StoreDashboard = () => {
           </div>
         </div>
 
-        {/* Password Update Form */}
+        
         {showPasswordForm && (
           <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl p-6 mb-8 shadow-xl">
             <div className="flex items-center justify-between mb-6">
@@ -264,7 +271,7 @@ const StoreDashboard = () => {
                 </div>
               </div>
 
-              {/* New Password */}
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   New Password

@@ -48,7 +48,7 @@ const AdminDashboard = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('http://localhost:8000/api/stores', {
+      const res = await axios.get('http://localhost:8000/api/user', {
         headers: { Authorization: `Bearer ${token}` },
         params: filters,
       });
@@ -143,9 +143,6 @@ const AdminDashboard = () => {
     setLoading(false);
   }
 };
-
-
-
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to log out?')) {
       localStorage.clear();

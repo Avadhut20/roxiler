@@ -35,6 +35,38 @@ router.post('/', verifyToken, adminOnly, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+router.get("/ratings", verifyToken, async (req, res) => {
+  const userId = req.user.id;
+  
+  console.log(`Fetching ratings for user ${userId}`);
+  try {
+    const email= await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    });
+    console.log(`User email: ${email.email}`);
+
+
+    const storeId= await prisma.store.findUnique({
+      where: { email:email.email },
+      select: { id: true },
+    });
+    console.log(`Store ID for user ${userId}: ${storeId.id}`);
+    const ratings = await prisma.rating.findMany({
+      where: { storeId: storeId.id},
+      include: { store: true },
+    });
+    console.log(`Ratings found:`, ratings);
+
+    if (ratings.length === 0) {
+      return res.status(404).json({ message: 'No ratings found for this user' });
+    }
+
+    res.status(200).json(ratings);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 // GET /api/stores?name=&address=
 router.get('/', verifyToken, async (req, res) => {
   const userId = req.user.id;
